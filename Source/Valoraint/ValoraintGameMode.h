@@ -6,6 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "ValoraintGameMode.generated.h"
 
+class UWeaponData;
 UCLASS(minimalapi)
 class AValoraintGameMode : public AGameModeBase
 {
@@ -13,6 +14,9 @@ class AValoraintGameMode : public AGameModeBase
 
 public:
 	AValoraintGameMode();
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TArray<UWeaponData*> AllWeapons;
 };
 
 

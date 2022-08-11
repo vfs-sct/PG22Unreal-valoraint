@@ -3,8 +3,10 @@
 #include "ValoraintHUD.h"
 #include "Engine/Canvas.h"
 #include "Engine/Texture2D.h"
-#include "TextureResource.h"
 #include "CanvasItem.h"
+#include "Blueprint/UserWidget.h"
+#include "Data/WeaponData.h"
+#include "UI/ShopScreen.h"
 #include "UObject/ConstructorHelpers.h"
 
 AValoraintHUD::AValoraintHUD()
@@ -32,4 +34,20 @@ void AValoraintHUD::DrawHUD()
 	FCanvasTileItem TileItem( CrosshairDrawPosition, CrosshairTex->Resource, FLinearColor::White);
 	TileItem.BlendMode = SE_BLEND_Translucent;
 	Canvas->DrawItem( TileItem );
+}
+
+void AValoraintHUD::ToggleShop()
+{
+	UWorld* world = GetWorld();
+	if(!world) return;
+
+	if(!ShopScreen)
+	{
+		ShopScreen = CreateWidget<UShopScreen>(GetOwningPlayerController(), ShopScreenClass, TEXT("Shop Screen"));
+		ShopScreen->AddToViewport();
+		return;
+	}
+
+	ShopScreen->RemoveFromParent();
+	ShopScreen = nullptr;
 }

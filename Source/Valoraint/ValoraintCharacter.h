@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "MyInterface.h"
 #include "GameFramework/Character.h"
 #include "ValoraintCharacter.generated.h"
 
@@ -16,7 +17,7 @@ class USoundBase;
 class UWeaponData;
 
 UCLASS(config=Game)
-class AValoraintCharacter : public ACharacter
+class AValoraintCharacter : public ACharacter, public IMyInterface
 {
 	GENERATED_BODY()
 
@@ -95,6 +96,14 @@ public:
 	/** Whether to use motion controller location for aiming. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	uint8 bUsingMotionControllers : 1;
+
+	UStaticMeshComponent* GunMesh;
+
+	UFUNCTION(Server, Reliable)
+	void FireFirstAbility();
+	
+	UFUNCTION(Server, Unreliable)
+	void FireFirstAbilityVisuals();
 
 protected:
 

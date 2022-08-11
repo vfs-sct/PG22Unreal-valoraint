@@ -141,6 +141,9 @@ void AValoraintCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAxis("TurnRate", this, &AValoraintCharacter::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AValoraintCharacter::LookUpAtRate);
+
+	// Fire Abilities
+	PlayerInputComponent->BindAction("FirstAbility", IE_Pressed, this, &AValoraintCharacter::FireFirstAbility);
 }
 
 void AValoraintCharacter::Shoot_Implementation()
@@ -189,6 +192,18 @@ void AValoraintCharacter::Shoot_Implementation()
 			AnimInstance->Montage_Play(FireAnimation, 1.f);
 		}
 	}
+}
+
+void AValoraintCharacter::FireFirstAbility_Implementation()
+{
+	Execute_FirstAbility(this);
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.0f, FColor::Purple, TEXT("Fired First Ability"));
+	FireFirstAbilityVisuals();
+}
+
+void AValoraintCharacter::FireFirstAbilityVisuals_Implementation()
+{
+	//TODO Try to run particle effects/VFX
 }
 
 void AValoraintCharacter::OnFire()

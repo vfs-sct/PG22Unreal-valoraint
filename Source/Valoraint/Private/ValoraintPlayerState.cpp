@@ -11,3 +11,8 @@ void AValoraintPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	// Registering variable for networking
 	DOREPLIFETIME(AValoraintPlayerState, PlayerWallet);
 }
+
+void AValoraintPlayerState::Purchase_Implementation(FCurrency Cost)
+{
+	PlayerWallet = PlayerWallet - Cost;
+}

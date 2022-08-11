@@ -10,13 +10,23 @@
 /**
  * 
  */
-UCLASS()
+UENUM(BlueprintType)
+enum class EGunType : uint8
+{
+	PrimaryWeapon,
+	SecondaryWeapon
+};
+
+UCLASS(BlueprintType, Blueprintable)
 class VALORAINT_API UWeaponData : public UDataAsset
 {
 	GENERATED_BODY()
 
 public:
 
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
+	FText GunName;
+	
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	float DamageAmount = 10.0f;
 
@@ -28,4 +38,9 @@ public:
 	
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	UStaticMesh* GunMesh;
+	
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
+	EGunType GunType;
+
+	
 };

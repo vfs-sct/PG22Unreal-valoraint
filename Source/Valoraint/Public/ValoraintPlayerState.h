@@ -20,4 +20,7 @@ public:
 	FCurrency PlayerWallet;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UFUNCTION(Server, Reliable, BlueprintCallable)
+	void Purchase(FCurrency Cost);
 };
