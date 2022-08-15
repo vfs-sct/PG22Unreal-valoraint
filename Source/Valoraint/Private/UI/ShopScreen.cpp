@@ -2,9 +2,10 @@
 
 
 #include "UI/ShopScreen.h"
+
+#include "ValoraintGameState.h"
 #include "Valoraint/Public/Data/WeaponData.h"
 #include "Components/TileView.h"
-#include "Valoraint/ValoraintGameMode.h"
 
 void UShopScreen::NativeOnInitialized()
 {
@@ -14,13 +15,13 @@ void UShopScreen::NativeOnInitialized()
 
 	if(!world) return;
 
-	if(AValoraintGameMode* GameMode = world->GetAuthGameMode<AValoraintGameMode>())
+	if(AValoraintGameState* GameState = world->GetGameState<AValoraintGameState>())
 	{
-		TArray<UWeaponData*> PrimaryWeapons = GameMode->AllWeapons.FilterByPredicate([](const UWeaponData* weapon)->bool
+		TArray<UWeaponData*> PrimaryWeapons = GameState->AllWeapons.FilterByPredicate([](const UWeaponData* weapon)->bool
 		{
 			return weapon->GunType == EGunType::PrimaryWeapon;
 		});
-		TArray<UWeaponData*> SecondaryWeapons = GameMode->AllWeapons.FilterByPredicate([](const UWeaponData* weapon)->bool
+		TArray<UWeaponData*> SecondaryWeapons = GameState->AllWeapons.FilterByPredicate([](const UWeaponData* weapon)->bool
 		{
 			return weapon->GunType == EGunType::SecondaryWeapon;
 		});
