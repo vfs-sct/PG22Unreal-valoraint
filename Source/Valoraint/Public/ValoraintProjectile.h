@@ -1,37 +1,39 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright (C) Shatrujit Aditya Kumar 2022, All Rights Reserved
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "ValoraintProjectile.generated.h"
+#include "ValoraintBullet.generated.h"
 
 class USphereComponent;
+class UStaticMeshComponent;
 class UProjectileMovementComponent;
 
-UCLASS(config=Game)
-class AValoraintProjectile : public AActor
+UCLASS()
+class VALORAINT_API AValoraintProjectile : public AActor
 {
 	GENERATED_BODY()
-
-	/** Sphere collision component */
-	UPROPERTY(VisibleDefaultsOnly, Category=Projectile)
-	USphereComponent* CollisionComp;
-
-	/** Projectile movement component */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	UProjectileMovementComponent* ProjectileMovement;
-
-public:
+	
+public:	
+	// Sets default values for this actor's properties
 	AValoraintProjectile();
 
-	/** called when projectile hits something */
-	UFUNCTION()
-	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	USphereComponent* Collider;
+	
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UStaticMeshComponent* Mesh;
+	
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UProjectileMovementComponent* ProjMoveComp;
 
-	/** Returns CollisionComp subobject **/
-	USphereComponent* GetCollisionComp() const { return CollisionComp; }
-	/** Returns ProjectileMovement subobject **/
-	UProjectileMovementComponent* GetProjectileMovement() const { return ProjectileMovement; }
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
+public:	
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
 };
-
