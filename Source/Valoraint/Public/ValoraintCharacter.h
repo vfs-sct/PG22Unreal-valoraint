@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "MyInterface.h"
+#include "AbilityInterface.h"
 #include "GameFramework/Character.h"
 #include "ValoraintCharacter.generated.h"
 
@@ -17,7 +17,7 @@ class USoundBase;
 class UWeaponData;
 
 UCLASS(config=Game)
-class AValoraintCharacter : public ACharacter, public IMyInterface
+class AValoraintCharacter : public ACharacter, public IAbilityInterface
 {
 	GENERATED_BODY()
 

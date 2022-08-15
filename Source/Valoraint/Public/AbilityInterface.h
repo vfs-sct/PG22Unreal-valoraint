@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "MyInterface.generated.h"
+#include "AbilityInterface.generated.h"
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
-class UMyInterface : public UInterface
+class UAbilityInterface : public UInterface
 {
 	GENERATED_BODY()
 };
@@ -16,7 +16,7 @@ class UMyInterface : public UInterface
 /**
  * 
  */
-class VALORAINT_API IMyInterface
+class VALORAINT_API IAbilityInterface
 {
 	GENERATED_BODY()
 
