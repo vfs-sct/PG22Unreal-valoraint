@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "ValoraintBullet.generated.h"
+#include "ValoraintProjectile.generated.h"
 
 class USphereComponent;
 class UStaticMeshComponent;
