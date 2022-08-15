@@ -14,9 +14,6 @@ class AValoraintGameMode : public AGameModeBase
 
 public:
 	AValoraintGameMode();
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TArray<UWeaponData*> AllWeapons;
 };
 
 
