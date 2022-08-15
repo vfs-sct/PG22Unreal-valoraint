@@ -11,7 +11,7 @@ class UWeaponData;
  * 
  */
 UCLASS()
-class VALORAINT_API AValoraintGameState : public AGameState
+class VALORAINT_API AValoraintGameState : public AGameStateBase
 {
 	GENERATED_BODY()
 	
