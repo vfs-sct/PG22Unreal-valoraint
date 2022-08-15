@@ -2,7 +2,6 @@
 
 #include "ValoraintGameMode.h"
 #include "ValoraintHUD.h"
-#include "ValoraintCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 
 AValoraintGameMode::AValoraintGameMode()

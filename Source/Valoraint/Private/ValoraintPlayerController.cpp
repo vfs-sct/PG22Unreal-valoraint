@@ -3,7 +3,7 @@
 
 #include "ValoraintPlayerController.h"
 
-#include "Valoraint/ValoraintHUD.h"
+#include "ValoraintHUD.h"
 
 void AValoraintPlayerController::SetupInputComponent()
 {

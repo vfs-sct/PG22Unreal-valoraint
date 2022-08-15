@@ -5,7 +5,6 @@
 #include "Engine/Texture2D.h"
 #include "CanvasItem.h"
 #include "Blueprint/UserWidget.h"
-#include "Data/WeaponData.h"
 #include "UI/ShopScreen.h"
 #include "UObject/ConstructorHelpers.h"
 
