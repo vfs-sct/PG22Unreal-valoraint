@@ -34,10 +34,16 @@ public:
 	int32 MagazineSize = 5;
 	
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
+	float FireRate = 0.2f;
+	
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	FCurrency Cost;
 	
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	UStaticMesh* GunMesh;
+	USkeletalMesh* GunMesh;
+	
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
+	UStaticMesh* AmmoMesh;
 	
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	EGunType GunType;

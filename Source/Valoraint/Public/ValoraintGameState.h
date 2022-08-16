@@ -17,6 +17,6 @@ class VALORAINT_API AValoraintGameState : public AGameStateBase
 	
 public:
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<UWeaponData*> AllWeapons;
 };
