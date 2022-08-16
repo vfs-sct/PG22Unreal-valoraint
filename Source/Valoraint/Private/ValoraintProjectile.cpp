@@ -3,6 +3,7 @@
 
 #include "ValoraintProjectile.h"
 
+#include "ValoraintCharacter.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
@@ -18,6 +19,7 @@ AValoraintProjectile::AValoraintProjectile()
 
 	SetRootComponent(Collider);
 	Mesh->SetupAttachment(Collider);
+	Collider->OnComponentHit.AddDynamic(this, &AValoraintProjectile::OnHit);
 
 	ProjMoveComp->SetUpdatedComponent(Collider);
 	bReplicates = true;
@@ -27,7 +29,7 @@ AValoraintProjectile::AValoraintProjectile()
 void AValoraintProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	Collider->OnComponentHit.AddDynamic(this, &AValoraintProjectile::OnHit);
 }
 
 // Called every frame
@@ -35,4 +37,17 @@ void AValoraintProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void AValoraintProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
+{
+	AValoraintCharacter* Player = Cast<AValoraintCharacter>(OtherActor);
+	if(OtherActor == Player)
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, "Hit");
+		
+	}
+
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, "Not Hit");
+	Destroy();
 }
