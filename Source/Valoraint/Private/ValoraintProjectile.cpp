@@ -45,9 +45,13 @@ void AValoraintProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* Othe
 	if(OtherActor == Player)
 	{
 		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, "Hit");
-		
+		Player->Hit();
+		Destroy();
 	}
-
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, "Not Hit");
-	Destroy();
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, "Not Hit");
+		Destroy();
+	}
+	
 }

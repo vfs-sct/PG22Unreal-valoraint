@@ -25,6 +25,7 @@ AValoraintCharacter::AValoraintCharacter()
 	// set our turn rates for input
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
+	Health = 100.0f;
 
 	NetworkedCharacterMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Networked Mesh"));
 	NetworkedCharacterMesh->SetOwnerNoSee(true);
@@ -227,3 +228,17 @@ void AValoraintCharacter::LookUpAtRate(float Rate)
 	// calculate delta for this frame from the rate information
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 }
+
+void AValoraintCharacter::Hit()
+{
+	if(Health <= 0)
+	{
+		Destroy();
+		Restart();
+	}
+	Health -= 10;
+	FString TheFloatStr = FString::SanitizeFloat(Health);
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, *TheFloatStr );
+	
+}
+
