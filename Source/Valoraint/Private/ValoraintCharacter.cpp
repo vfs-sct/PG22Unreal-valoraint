@@ -64,8 +64,8 @@ void AValoraintCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	//Attach gun mesh component to Skeleton, doing it here because the skeleton is not yet created in the constructor
-	FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, EAttachmentRule::SnapToTarget,true), TEXT("GripPoint"));
-
+	FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, EAttachmentRule::SnapToTarget,true), TEXT("GripPoint"));
+	SetWeapon();
 	Mesh1P->SetHiddenInGame(false, true);
 }
 
@@ -146,6 +146,10 @@ void AValoraintCharacter::FireFirstAbility_Implementation()
 void AValoraintCharacter::FireFirstAbilityVisuals_Implementation()
 {
 	//TODO Try to run particle effects/VFX
+}
+
+void AValoraintCharacter::SetWeapon()
+{
 }
 
 void AValoraintCharacter::OnFire()

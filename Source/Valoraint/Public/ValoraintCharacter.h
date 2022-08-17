@@ -93,6 +93,8 @@ public:
 
 protected:
 
+	void SetWeapon();
+
 	UFUNCTION(Server, Reliable)
 	void Shoot();
 	
