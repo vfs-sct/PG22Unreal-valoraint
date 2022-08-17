@@ -229,14 +229,13 @@ void AValoraintCharacter::LookUpAtRate(float Rate)
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 }
 
-void AValoraintCharacter::Hit()
+void AValoraintCharacter::Hit_Implementation()
 {
+	Health -= 10;
 	if(Health <= 0)
 	{
 		Destroy();
-		Restart();
 	}
-	Health -= 10;
 	FString TheFloatStr = FString::SanitizeFloat(Health);
 	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, *TheFloatStr );
 	

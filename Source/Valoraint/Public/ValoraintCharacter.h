@@ -63,8 +63,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseLookUpRate;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Gameplay)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	float Health;
+
+	
 
 	/** Gun muzzle's offset from the characters location */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
@@ -93,6 +95,9 @@ public:
 	
 	UFUNCTION(Server, Unreliable)
 	void FireFirstAbilityVisuals();
+
+	UFUNCTION(Server, Reliable)
+	void Hit();
 
 protected:
 
@@ -157,7 +162,7 @@ public:
 	/** Returns FirstPersonCameraComponent subobject **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
-	void Hit();
+	
 
 };
 
