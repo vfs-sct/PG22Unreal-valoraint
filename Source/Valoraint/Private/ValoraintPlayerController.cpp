@@ -19,7 +19,6 @@ void AValoraintPlayerController::SetupInputComponent()
 
 void AValoraintPlayerController::ToggleShop()
 {
-
 	if(AValoraintHUD* hud = GetHUD<AValoraintHUD>())
 	{
 		hud->ToggleShop();

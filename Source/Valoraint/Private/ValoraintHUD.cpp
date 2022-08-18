@@ -4,6 +4,7 @@
 #include "Engine/Canvas.h"
 #include "Engine/Texture2D.h"
 #include "CanvasItem.h"
+#include "ValoraintPlayerController.h"
 #include "Blueprint/UserWidget.h"
 #include "UI/ShopScreen.h"
 #include "UObject/ConstructorHelpers.h"
@@ -40,13 +41,16 @@ void AValoraintHUD::ToggleShop()
 	UWorld* world = GetWorld();
 	if(!world) return;
 
+	APlayerController* PlayerController = GetOwningPlayerController();
 	if(!ShopScreen)
 	{
+		PlayerController->SetShowMouseCursor(true);
 		ShopScreen = CreateWidget<UShopScreen>(GetOwningPlayerController(), ShopScreenClass, TEXT("Shop Screen"));
 		ShopScreen->AddToViewport();
 		return;
 	}
 
+	PlayerController->SetShowMouseCursor(false);
 	ShopScreen->RemoveFromParent();
 	ShopScreen = nullptr;
 }
