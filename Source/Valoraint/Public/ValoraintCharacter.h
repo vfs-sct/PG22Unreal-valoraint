@@ -29,13 +29,21 @@ class AValoraintCharacter : public ACharacter, public IAbilityInterface
 	UPROPERTY(EditDefaultsOnly)
 	USkeletalMeshComponent* NetworkedCharacterMesh;
 
-	/** Gun mesh: 1st person view (seen only by self) */
+	/** Primary Gun mesh */
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 	USkeletalMeshComponent* FP_Gun;
 
-	/** Location on gun mesh where projectiles should spawn. */
+	/** Location on primary gun where projectiles should spawn. */
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 	USceneComponent* FP_MuzzleLocation;
+	
+	/** Secondary weapon mesh */
+	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
+	USkeletalMeshComponent* SecondaryGun;
+
+	/** Location on secondary gun where projectiles should spawn. */
+	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
+	USceneComponent* SecondaryMuzzle;
 
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -82,8 +90,9 @@ public:
 	/** Whether to use motion controller location for aiming. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	uint8 bUsingMotionControllers : 1;
-
-	UStaticMeshComponent* GunMesh;
+	
+	UFUNCTION(NetMulticast, Unreliable)
+	void SwapWeapons();
 
 	UFUNCTION(Server, Reliable)
 	void FireFirstAbility();
@@ -93,7 +102,9 @@ public:
 
 protected:
 
-	void SetWeapon();
+	void SetupWeapons() const;
+
+	void SwapWeaponsInternal(USkeletalMeshComponent* Primary, USkeletalMeshComponent* Secondary);
 
 	UFUNCTION(Server, Reliable)
 	void Shoot();
@@ -101,52 +112,18 @@ protected:
 	/** Fires a projectile. */
 	void OnFire();
 
-	/** Resets HMD orientation and position in VR. */
-	void OnResetVR();
-
 	/** Handles moving forward/backward */
 	void MoveForward(float Val);
 
-	/** Handles stafing movement, left and right */
+	/** Handles strafing movement, left and right */
 	void MoveRight(float Val);
 
-	/**
-	 * Called via input to turn at a given rate.
-	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
-	 */
-	void TurnAtRate(float Rate);
-
-	/**
-	 * Called via input to turn look up/down at a given rate.
-	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
-	 */
-	void LookUpAtRate(float Rate);
-
-	struct TouchData
-	{
-		TouchData() { bIsPressed = false;Location=FVector::ZeroVector;}
-		bool bIsPressed;
-		ETouchIndex::Type FingerIndex;
-		FVector Location;
-		bool bMoved;
-	};
-	void BeginTouch(const ETouchIndex::Type FingerIndex, const FVector Location);
-	void EndTouch(const ETouchIndex::Type FingerIndex, const FVector Location);
-	void TouchUpdate(const ETouchIndex::Type FingerIndex, const FVector Location);
-	TouchData	TouchItem;
+	bool bIsPrimaryEquipped;
 	
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	// End of APawn interface
-
-	/* 
-	 * Configures input for touchscreen devices if there is a valid touch interface for doing so 
-	 *
-	 * @param	InputComponent	The input component pointer to bind controls to
-	 * @returns true if touch controls were enabled.
-	 */
-	bool EnableTouchscreenMovement(UInputComponent* InputComponent);
 
 public:
 	/** Returns Mesh1P subobject **/

@@ -1,11 +1,14 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ValoraintCharacter.h"
+
+#include "SkeletalRenderPublic.h"
 #include "ValoraintProjectile.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
+#include "Data/WeaponData.h"
 #include "GameFramework/InputSettings.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -50,7 +53,19 @@ AValoraintCharacter::AValoraintCharacter()
 
 	FP_MuzzleLocation = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzleLocation"));
 	FP_MuzzleLocation->SetupAttachment(FP_Gun);
-	FP_MuzzleLocation->SetRelativeLocation(FVector(0.2f, 48.4f, -10.6f));
+	FP_MuzzleLocation->SetRelativeLocation(FP_Gun->GetSocketLocation("Muzzle"));
+	
+	// Create secondary gun mesh component
+	SecondaryGun = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SecondaryWeapon"));
+	SecondaryGun->bCastDynamicShadow = false;
+	SecondaryGun->CastShadow = false;
+	// FP_Gun->SetupAttachment(Mesh1P, TEXT("GripPoint"));
+	SecondaryGun->SetupAttachment(RootComponent);
+	SecondaryGun->SetOwnerNoSee(true);
+	
+	SecondaryMuzzle = CreateDefaultSubobject<USceneComponent>(TEXT("SecondaryMuzzle"));
+	SecondaryMuzzle->SetupAttachment(SecondaryGun);
+	SecondaryMuzzle->SetRelativeLocation(SecondaryGun->GetSocketLocation("Muzzle"));
 
 	// Default offset from the character location for projectiles to spawn
 	GunOffset = FVector(100.0f, 0.0f, 10.0f);
@@ -64,8 +79,10 @@ void AValoraintCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	//Attach gun mesh component to Skeleton, doing it here because the skeleton is not yet created in the constructor
-	FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::KeepWorld, EAttachmentRule::SnapToTarget,true), TEXT("GripPoint"));
-	SetWeapon();
+	FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget,true), TEXT("GripPoint"));
+	SecondaryGun->AttachToComponent(NetworkedCharacterMesh, FAttachmentTransformRules(EAttachmentRule::KeepRelative,true), TEXT("HolsterPoint"));
+	bIsPrimaryEquipped = true;
+	SetupWeapons();
 	Mesh1P->SetHiddenInGame(false, true);
 }
 
@@ -95,6 +112,9 @@ void AValoraintCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 
 	// Fire Abilities
 	PlayerInputComponent->BindAction("FirstAbility", IE_Pressed, this, &AValoraintCharacter::FireFirstAbility);
+	
+	// Swap Weapons
+	PlayerInputComponent->BindAction("SwapWeapon", IE_Pressed, this, &AValoraintCharacter::SwapWeapons);
 }
 
 void AValoraintCharacter::Shoot_Implementation()
@@ -106,8 +126,9 @@ void AValoraintCharacter::Shoot_Implementation()
 		if (World != nullptr)
 		{
 			const FRotator SpawnRotation = GetControlRotation();
+			const USceneComponent* Muzzle = (bIsPrimaryEquipped ? FP_MuzzleLocation : SecondaryMuzzle);
 			// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-			const FVector SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
+			const FVector SpawnLocation = ((Muzzle != nullptr) ? Muzzle->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
 
 			//Set Spawn Collision Handling Override
 			FActorSpawnParameters ActorSpawnParams;
@@ -148,47 +169,39 @@ void AValoraintCharacter::FireFirstAbilityVisuals_Implementation()
 	//TODO Try to run particle effects/VFX
 }
 
-void AValoraintCharacter::SetWeapon()
+void AValoraintCharacter::SwapWeapons_Implementation()
 {
+	if(!PrimaryWeapon || !SecondaryWeapon) return;
+
+	if(bIsPrimaryEquipped)
+	{
+		SwapWeaponsInternal(FP_Gun, SecondaryGun);
+	} else
+	{
+		SwapWeaponsInternal(SecondaryGun, FP_Gun);
+	}
+	
+	bIsPrimaryEquipped = !bIsPrimaryEquipped;
 }
 
-void AValoraintCharacter::OnFire()
+void AValoraintCharacter::SetupWeapons() const
 {
-	// try and fire a projectile
-	if (ProjectileClass != nullptr)
-	{
-		UWorld* const World = GetWorld();
-		if (World != nullptr)
-		{
-			const FRotator SpawnRotation = GetControlRotation();
-			// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-			const FVector SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
-
-			//Set Spawn Collision Handling Override
-			FActorSpawnParameters ActorSpawnParams;
-			ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
-
-			// spawn the projectile at the muzzle
-			World->SpawnActor<AValoraintProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
-		}
+	if(PrimaryWeapon) {
+		FP_Gun->SetSkeletalMesh(PrimaryWeapon->GunMesh);
 	}
+	
+	if(!SecondaryWeapon) return;
+	SecondaryGun->SetSkeletalMesh(SecondaryWeapon->GunMesh);
+}
 
-	// try and play the sound if specified
-	if (FireSound != nullptr)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
-	}
-
-	// try and play a firing animation if specified
-	if (FireAnimation != nullptr)
-	{
-		// Get the animation object for the arms mesh
-		UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance();
-		if (AnimInstance != nullptr)
-		{
-			AnimInstance->Montage_Play(FireAnimation, 1.f);
-		}
-	}
+void AValoraintCharacter::SwapWeaponsInternal(USkeletalMeshComponent* Primary, USkeletalMeshComponent* Secondary)
+{
+	Secondary->DetachFromComponent({EDetachmentRule::KeepRelative, false});
+	Secondary->SetOwnerNoSee(false);
+	Secondary->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget,true), TEXT("GripPoint"));
+	Primary->DetachFromComponent({EDetachmentRule::KeepRelative, false});
+	Primary->SetOwnerNoSee(true);
+	Primary->AttachToComponent(NetworkedCharacterMesh, FAttachmentTransformRules(EAttachmentRule::KeepRelative,true), TEXT("HolsterPoint"));
 }
 
 void AValoraintCharacter::MoveForward(float Value)
