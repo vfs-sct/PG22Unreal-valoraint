@@ -25,8 +25,8 @@ void UShopScreen::NativeOnInitialized()
 		{
 			return weapon->GunType == EGunType::SecondaryWeapon;
 		});
-		PrimaryWeaponsGrid->SetListItems<UWeaponData*>(PrimaryWeapons);
-		SecondaryWeaponsGrid->SetListItems<UWeaponData*>(SecondaryWeapons);
+		PrimaryWeaponsLayout->SetListItems<UWeaponData*>(PrimaryWeapons);
+		SecondaryWeaponsLayout->SetListItems<UWeaponData*>(SecondaryWeapons);
 	}
 	
 }

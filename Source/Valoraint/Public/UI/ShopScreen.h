@@ -10,7 +10,6 @@
 /**
  * 
  */
-class UTileView;
 class UListView;
 UCLASS()
 class VALORAINT_API UShopScreen : public UUserWidget // public IUserObjectListEntry
@@ -20,10 +19,10 @@ class VALORAINT_API UShopScreen : public UUserWidget // public IUserObjectListEn
 public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (BindWidget))
-	UTileView* PrimaryWeaponsGrid;
+	UListView* PrimaryWeaponsLayout;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (BindWidget))
-	UListView* SecondaryWeaponsGrid;
+	UListView* SecondaryWeaponsLayout;
 
 	virtual void NativeOnInitialized() override;
 };
