@@ -10,7 +10,9 @@
 #include "HeadMountedDisplayFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "MotionControllerComponent.h"
+#include "ValoraintGameMode.h"
 #include "ValoraintProjectile.h"
+#include "GameFramework/GameSession.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -234,10 +236,18 @@ void AValoraintCharacter::Hit_Implementation()
 	Health -= 10;
 	if(Health <= 0)
 	{
-		Destroy();
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, "DIED" );
+		GetInstigator();
+		Health = 100;
 	}
 	FString TheFloatStr = FString::SanitizeFloat(Health);
 	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, *TheFloatStr );
 	
 }
+
+void AValoraintCharacter::Destroyed()
+{
+	//GetWorld()->GetAuthGameMode<AValoraintGameMode>()->RestartPlayer(GetWorld()->GetFirstPlayerController());
+}
+
 

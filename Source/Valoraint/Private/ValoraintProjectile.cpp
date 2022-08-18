@@ -46,6 +46,7 @@ void AValoraintProjectile::OnHit_Implementation(UPrimitiveComponent* HitComponen
 	AValoraintCharacter* Player = Cast<AValoraintCharacter>(OtherActor);
 	if(Player && hasHit == false)
 	{
+		SetInstigator(Player);
 		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, "Hit");
 		Player->Hit();
 		hasHit = true;

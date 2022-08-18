@@ -99,6 +99,9 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Hit();
 
+	
+	virtual void Destroyed() override;
+
 protected:
 
 	UFUNCTION(Server, Reliable)
