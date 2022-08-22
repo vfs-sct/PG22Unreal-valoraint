@@ -25,6 +25,7 @@ AValoraintProjectile::AValoraintProjectile()
 	bReplicates = true;
 }
 
+
 // Called when the game starts or when spawned
 void AValoraintProjectile::BeginPlay()
 {
@@ -38,6 +39,8 @@ void AValoraintProjectile::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 }
+
+
 
 void AValoraintProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {

@@ -11,6 +11,7 @@
 #include "Data/WeaponData.h"
 #include "GameFramework/InputSettings.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -71,6 +72,8 @@ AValoraintCharacter::AValoraintCharacter()
 	GunOffset = FVector(100.0f, 0.0f, 10.0f);
 
 	NetworkedCharacterMesh->SetupAttachment(RootComponent);
+
+	bReplicates = true;
 }
 
 void AValoraintCharacter::BeginPlay()
@@ -86,8 +89,20 @@ void AValoraintCharacter::BeginPlay()
 	Mesh1P->SetHiddenInGame(false, true);
 }
 
+
+void AValoraintCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION(AValoraintCharacter, bCanDash, COND_OwnerOnly);
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Input
+
+
+
+
 
 void AValoraintCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
@@ -111,7 +126,8 @@ void AValoraintCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 
 	// Fire Abilities
-	PlayerInputComponent->BindAction("FirstAbility", IE_Pressed, this, &AValoraintCharacter::FireFirstAbility);
+	PlayerInputComponent->BindAction("FirstAbility", IE_Pressed, this, &AValoraintCharacter::FirstAbilityServer);
+	PlayerInputComponent->BindAction("SecondAbility", IE_Pressed, this, &AValoraintCharacter::SecondAbilityServer);
 	
 	// Swap Weapons
 	PlayerInputComponent->BindAction("SwapWeapon", IE_Pressed, this, &AValoraintCharacter::SwapWeapons);
@@ -157,17 +173,96 @@ void AValoraintCharacter::Shoot_Implementation()
 	}
 }
 
-void AValoraintCharacter::FireFirstAbility_Implementation()
+void AValoraintCharacter::FireFirstAbility()
 {
-	Execute_FirstAbility(this);
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.0f, FColor::Purple, TEXT("Fired First Ability"));
-	FireFirstAbilityVisuals();
+	if(!CanDash()) return;
+	
 }
 
-void AValoraintCharacter::FireFirstAbilityVisuals_Implementation()
+bool AValoraintCharacter::CanDash() const
+{
+	return bCanDash;
+}
+
+bool AValoraintCharacter::FirstAbilityServer_Validate()
+{
+	return true;
+}
+
+
+void AValoraintCharacter::FirstAbilityServer_Implementation()
+{
+	Execute_FirstAbility(this);
+	
+	
+	FirstAbilityNetMulticast();
+}
+
+void AValoraintCharacter::FirstAbility_Implementation()
+{
+	IAbilityInterface::FirstAbility_Implementation();
+
+	const UWorld* world = GetWorld();
+	
+	LastDashTime = UKismetSystemLibrary::GetGameTimeInSeconds(world);
+
+	LaunchCharacter(GetActorForwardVector() * DashDistance, true, false);
+}
+
+void AValoraintCharacter::SecondAbilityNetMulticast_Implementation()
+{
+
+
+	
+}
+
+void AValoraintCharacter::SecondAbility_Implementation()
+{
+	IAbilityInterface::SecondAbility_Implementation();
+
+	const UWorld* world = GetWorld();
+
+	// try and fire a projectile
+	if (FlashbangProjectile != nullptr)
+	{
+		UWorld* const World = GetWorld();
+		if (world != nullptr)
+		{
+			const FRotator SpawnRotation = GetControlRotation();
+			const USceneComponent* Muzzle = (bIsPrimaryEquipped ? FP_MuzzleLocation : SecondaryMuzzle);
+			// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
+			const FVector SpawnLocation = ((Muzzle != nullptr) ? Muzzle->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
+
+			//Set Spawn Collision Handling Override
+			FActorSpawnParameters ActorSpawnParams;
+			ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+
+			// spawn the projectile at the muzzle
+			World->SpawnActor<AValoraintProjectile>(FlashbangProjectile, SpawnLocation, SpawnRotation, ActorSpawnParams);
+		}
+	}
+}
+
+void AValoraintCharacter::SecondAbilityServer_Implementation()
+{
+	Execute_SecondAbility(this);
+
+	SecondAbilityNetMulticast();
+	
+}
+
+bool AValoraintCharacter::SecondAbilityServer_Validate()
+{
+	return true;
+}
+
+
+void AValoraintCharacter::FirstAbilityNetMulticast_Implementation()
 {
 	//TODO Try to run particle effects/VFX
 }
+
+
 
 void AValoraintCharacter::SwapWeapons_Implementation()
 {
@@ -183,6 +278,8 @@ void AValoraintCharacter::SwapWeapons_Implementation()
 	
 	bIsPrimaryEquipped = !bIsPrimaryEquipped;
 }
+
+
 
 void AValoraintCharacter::SetupWeapons() const
 {

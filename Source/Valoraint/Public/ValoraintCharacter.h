@@ -15,6 +15,7 @@ class UMotionControllerComponent;
 class UAnimMontage;
 class USoundBase;
 class UWeaponData;
+class AValoraintProjectile;
 
 UCLASS(config=Game)
 class AValoraintCharacter : public ACharacter, public IAbilityInterface
@@ -48,6 +49,10 @@ class AValoraintCharacter : public ACharacter, public IAbilityInterface
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
+
+
+	
+	
 	
 
 public:
@@ -55,6 +60,8 @@ public:
 
 protected:
 	virtual void BeginPlay();
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -77,7 +84,7 @@ public:
 
 	/** Projectile class to spawn */
 	UPROPERTY(EditDefaultsOnly, Category=Projectile)
-	TSubclassOf<class AValoraintProjectile> ProjectileClass;
+	TSubclassOf<AValoraintProjectile> ProjectileClass;
 
 	/** Sound to play each time we fire */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
@@ -94,11 +101,28 @@ public:
 	UFUNCTION(NetMulticast, Unreliable)
 	void SwapWeapons();
 
-	UFUNCTION(Server, Reliable)
-	void FireFirstAbility();
+	UFUNCTION(BlueprintCallable)
+	bool CanDash() const;
+
+	// Server function with validation to prevent cheating
+	UFUNCTION(Server, Reliable, WithValidation)
+	void FirstAbilityServer();
 	
-	UFUNCTION(Server, Unreliable)
-	void FireFirstAbilityVisuals();
+	UFUNCTION(NetMulticast, Unreliable)
+	void FirstAbilityNetMulticast();
+
+	virtual void FirstAbility_Implementation() override;
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void SecondAbilityServer();
+	
+	UFUNCTION(NetMulticast, Unreliable)
+	void SecondAbilityNetMulticast();
+
+	virtual void SecondAbility_Implementation() override;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<AValoraintProjectile> FlashbangProjectile;
 
 protected:
 
@@ -112,6 +136,9 @@ protected:
 	/** Fires a projectile. */
 	void OnFire();
 
+	// Fire First Ability 
+	void FireFirstAbility();
+	
 	/** Handles moving forward/backward */
 	void MoveForward(float Val);
 
@@ -119,6 +146,18 @@ protected:
 	void MoveRight(float Val);
 
 	bool bIsPrimaryEquipped;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Dash)
+	float DashCoolDown = 6;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = Dash)
+	bool bCanDash = true;
+
+	UPROPERTY(BlueprintReadWrite, Category = Dash)
+	float LastDashTime = 0;	
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = Dash)
+	float DashDistance = 200;
 	
 protected:
 	// APawn interface
