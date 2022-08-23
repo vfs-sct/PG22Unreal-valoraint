@@ -94,15 +94,13 @@ void AValoraintCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME_CONDITION(AValoraintCharacter, bCanDash, COND_OwnerOnly);
+	// Returning replicated individual bools back to individual AValoraintCharacter
+	DOREPLIFETIME_CONDITION(AValoraintCharacter, bCanFirstAbility, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(AValoraintCharacter, bCanSecondAbility, COND_OwnerOnly);
 }
 
 //////////////////////////////////////////////////////////////////////////
 // Input
-
-
-
-
 
 void AValoraintCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
@@ -126,8 +124,9 @@ void AValoraintCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 
 	// Fire Abilities
-	PlayerInputComponent->BindAction("FirstAbility", IE_Pressed, this, &AValoraintCharacter::FirstAbilityServer);
-	PlayerInputComponent->BindAction("SecondAbility", IE_Pressed, this, &AValoraintCharacter::SecondAbilityServer);
+	//PlayerInputComponent->BindAction("FirstAbility", IE_Pressed, this, &AValoraintCharacter::FirstAbilityServer);
+	PlayerInputComponent->BindAction("FirstAbility", IE_Pressed, this, &AValoraintCharacter::FireFirstAbility);
+	PlayerInputComponent->BindAction("SecondAbility", IE_Pressed, this, &AValoraintCharacter::FireSecondAbility);
 	
 	// Swap Weapons
 	PlayerInputComponent->BindAction("SwapWeapon", IE_Pressed, this, &AValoraintCharacter::SwapWeapons);
@@ -173,21 +172,55 @@ void AValoraintCharacter::Shoot_Implementation()
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
+// First Ability
+
 void AValoraintCharacter::FireFirstAbility()
 {
-	if(!CanDash()) return;
+	// check
+	CheckCanFirstAbility();
+
+	// if bool false, return
+	if(!CanFirstAbility()) return;
+
+	// fire server first ability function
+	FirstAbilityServer();
+}
+
+void AValoraintCharacter::CheckCanFirstAbility_Implementation()
+{
+	// if this actor has no network authority, or world reference is nullptr
+	if (!HasAuthority()) return;
+
+	const UWorld* world = GetWorld();
+	if (world == nullptr) return;
+		
+	// if dash time is in cooldown, flip bool to true
+	if(LastDashTime + DashCoolDown < UKismetSystemLibrary::GetGameTimeInSeconds(world))
+	{
+		bCanFirstAbility = true;
+	}
 	
 }
 
-bool AValoraintCharacter::CanDash() const
+bool AValoraintCharacter::CanFirstAbility() const
 {
-	return bCanDash;
+	return bCanFirstAbility;
 }
 
 void AValoraintCharacter::FirstAbilityServer_Implementation()
 {
 	// do first ability function from ability interface
 	Execute_FirstAbility(this);
+
+	// grab world
+	const UWorld* world = GetWorld();
+
+	// Set up last dash time in server
+	LastDashTime = UKismetSystemLibrary::GetGameTimeInSeconds(world);
+
+	// Make dash in cooldown
+	bCanFirstAbility = false;
 	
 	// do first ability particle effect
 	FirstAbilityNetMulticast();
@@ -202,13 +235,7 @@ void AValoraintCharacter::FirstAbility_Implementation()
 {
 	// implementation of first ability from ability interface
 	IAbilityInterface::FirstAbility_Implementation();
-
-	// grab world
-	const UWorld* world = GetWorld();
-
-	// Set up last dash time
-	LastDashTime = UKismetSystemLibrary::GetGameTimeInSeconds(world);
-
+	
 	// Launch character to perform dashing 
 	LaunchCharacter(GetActorForwardVector() * DashDistance, true, false);
 }
@@ -218,11 +245,49 @@ void AValoraintCharacter::FirstAbilityNetMulticast_Implementation()
 	//TODO Try to run particle effects/VFX
 }
 
+//////////////////////////////////////////////////////////////////////////
+// Second Ability
+
+void AValoraintCharacter::FireSecondAbility()
+{
+	// check
+	CheckCanSecondAbility();
+
+	// if check is true, fire Second ability server function
+	if(!CanSecondAbility()) return;
+		
+	SecondAbilityServer();
+}
+
+bool AValoraintCharacter::CanSecondAbility() const
+{
+	return bCanSecondAbility;
+}
+
+void AValoraintCharacter::CheckCanSecondAbility_Implementation()
+{
+	// if this actor has no authority, or world reference is nullptr, return
+	if (!HasAuthority()) return;
+
+	const UWorld* world = GetWorld();
+	if (world == nullptr) return;
+		
+	// if number of emitter spawner is bigger, player still can fire, else, false	
+	if(NumOfEmiSpawner > 0)
+		bCanSecondAbility = true;
+	else
+		bCanSecondAbility = false;
+}
+
+
 void AValoraintCharacter::SecondAbilityServer_Implementation()
 {
 	// do second ability function from ability interface
 	Execute_SecondAbility(this);
 
+	// Server side reduce 1 emitter projectile 
+	NumOfEmiSpawner--;
+	
 	// do second ability particle effect
 	SecondAbilityNetMulticast();
 }
@@ -245,7 +310,7 @@ void AValoraintCharacter::SecondAbility_Implementation()
 			FActorSpawnParameters ActorSpawnParams;
 			ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 
-			// spawn the flashbang/ at the muzzle
+			// spawn the emitter Spawner/ at the muzzle
 			world->SpawnActor<AEmittSpawnerProjectile>(EmitterSpawnProjectile, SpawnLocation, SpawnRotation, ActorSpawnParams);
 		}
 	}
@@ -261,7 +326,8 @@ void AValoraintCharacter::SecondAbilityNetMulticast_Implementation()
 	
 }
 
-
+//////////////////////////////////////////////////////////////////////////
+// Swap Weapon
 
 void AValoraintCharacter::SwapWeapons_Implementation()
 {

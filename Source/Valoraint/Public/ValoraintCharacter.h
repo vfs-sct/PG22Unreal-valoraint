@@ -62,6 +62,8 @@ public:
 protected:
 	virtual void BeginPlay();
 
+	
+	// Function to return properties that are used for network replication
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
@@ -102,22 +104,44 @@ public:
 	UFUNCTION(NetMulticast, Unreliable)
 	void SwapWeapons();
 
-	// TODO: Wait to be implemented
-	UFUNCTION(BlueprintCallable)
-	bool CanDash() const;
 
-	// First Ability
+
+	//////////////////////// First Ability /////////////////////////////////
+
+	// Fire First Ability 
+	void FireFirstAbility();
+	
 	// Server function with validation to prevent cheating
 	UFUNCTION(Server, Reliable, WithValidation)
 	void FirstAbilityServer();
+
+	// Server function to check if player can fire first ability
+	UFUNCTION(Server,Reliable)
+	void CheckCanFirstAbility();
+	
+	// const function to return bCanDash
+	bool CanFirstAbility() const;
 	
 	virtual void FirstAbility_Implementation() override;
 
 	// Multicast function to spawn particle effects
 	UFUNCTION(NetMulticast, Unreliable)
 	void FirstAbilityNetMulticast();
+	
+	
 
-	// Second Ability
+	//////////////////////// Second Ability /////////////////////////////////
+
+	// Fire Second Ability
+	void FireSecondAbility();
+
+	// Server function to check if player can fire second ability
+	UFUNCTION(Server,Reliable)
+	void CheckCanSecondAbility();
+
+	// const function to return bCanSecondAbility
+	bool CanSecondAbility() const;
+	
 	// Server function with validation to prevent cheating
 	UFUNCTION(Server, Reliable, WithValidation)
 	void SecondAbilityServer();
@@ -127,13 +151,6 @@ public:
 	// Multicast function to spawn particle effects
 	UFUNCTION(NetMulticast, Unreliable)
 	void SecondAbilityNetMulticast();
-
-	// Property for Second ability
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=SecondAbility)
-	TSubclassOf<AEmittSpawnerProjectile> EmitterSpawnProjectile;
-
-	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category=SecondAbility)
-	int32 NumOfFlashbang = 3;
 
 protected:
 
@@ -147,8 +164,6 @@ protected:
 	/** Fires a projectile. */
 	void OnFire();
 
-	// Fire First Ability 
-	void FireFirstAbility();
 	
 	/** Handles moving forward/backward */
 	void MoveForward(float Val);
@@ -158,17 +173,31 @@ protected:
 
 	bool bIsPrimaryEquipped;
 
+	// Property for first ability
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Dash)
 	float DashCoolDown = 6;
 
+	// Replicated property for network to replicate back to owner 
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = Dash)
-	bool bCanDash = true;
+	bool bCanFirstAbility = true;
 
 	UPROPERTY(BlueprintReadWrite, Category = Dash)
 	float LastDashTime = 0;	
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = Dash)
 	float DashDistance = 200;
+
+	
+	// Property for Second ability
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=SecondAbility)
+	TSubclassOf<AEmittSpawnerProjectile> EmitterSpawnProjectile;
+
+	// Replicated properties for network to replicate back to owner 
+	UPROPERTY(Replicated, EditAnywhere,BlueprintReadWrite, Category=SecondAbility)
+	int32 NumOfEmiSpawner = 3;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = SecondAbility)
+	bool bCanSecondAbility = true;
 	
 protected:
 	// APawn interface
