@@ -184,48 +184,56 @@ bool AValoraintCharacter::CanDash() const
 	return bCanDash;
 }
 
+void AValoraintCharacter::FirstAbilityServer_Implementation()
+{
+	// do first ability function from ability interface
+	Execute_FirstAbility(this);
+	
+	// do first ability particle effect
+	FirstAbilityNetMulticast();
+}
+
 bool AValoraintCharacter::FirstAbilityServer_Validate()
 {
 	return true;
 }
 
-
-void AValoraintCharacter::FirstAbilityServer_Implementation()
-{
-	Execute_FirstAbility(this);
-	
-	
-	FirstAbilityNetMulticast();
-}
-
 void AValoraintCharacter::FirstAbility_Implementation()
 {
+	// implementation of first ability from ability interface
 	IAbilityInterface::FirstAbility_Implementation();
 
+	// grab world
 	const UWorld* world = GetWorld();
-	
+
+	// Set up last dash time
 	LastDashTime = UKismetSystemLibrary::GetGameTimeInSeconds(world);
 
+	// Launch character to perform dashing 
 	LaunchCharacter(GetActorForwardVector() * DashDistance, true, false);
 }
 
-void AValoraintCharacter::SecondAbilityNetMulticast_Implementation()
+void AValoraintCharacter::FirstAbilityNetMulticast_Implementation()
 {
+	//TODO Try to run particle effects/VFX
+}
 
+void AValoraintCharacter::SecondAbilityServer_Implementation()
+{
+	// do second ability function from ability interface
+	Execute_SecondAbility(this);
 
-	
+	// do second ability particle effect
+	SecondAbilityNetMulticast();
 }
 
 void AValoraintCharacter::SecondAbility_Implementation()
 {
-	IAbilityInterface::SecondAbility_Implementation();
-
-	const UWorld* world = GetWorld();
+	UWorld* const world = GetWorld();
 
 	// try and fire a projectile
-	if (FlashbangProjectile != nullptr)
+	if (EmitterSpawnProjectile != nullptr)
 	{
-		UWorld* const World = GetWorld();
 		if (world != nullptr)
 		{
 			const FRotator SpawnRotation = GetControlRotation();
@@ -237,18 +245,10 @@ void AValoraintCharacter::SecondAbility_Implementation()
 			FActorSpawnParameters ActorSpawnParams;
 			ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 
-			// spawn the projectile at the muzzle
-			World->SpawnActor<AValoraintProjectile>(FlashbangProjectile, SpawnLocation, SpawnRotation, ActorSpawnParams);
+			// spawn the flashbang/ at the muzzle
+			world->SpawnActor<AEmittSpawnerProjectile>(EmitterSpawnProjectile, SpawnLocation, SpawnRotation, ActorSpawnParams);
 		}
 	}
-}
-
-void AValoraintCharacter::SecondAbilityServer_Implementation()
-{
-	Execute_SecondAbility(this);
-
-	SecondAbilityNetMulticast();
-	
 }
 
 bool AValoraintCharacter::SecondAbilityServer_Validate()
@@ -256,10 +256,9 @@ bool AValoraintCharacter::SecondAbilityServer_Validate()
 	return true;
 }
 
-
-void AValoraintCharacter::FirstAbilityNetMulticast_Implementation()
+void AValoraintCharacter::SecondAbilityNetMulticast_Implementation()
 {
-	//TODO Try to run particle effects/VFX
+	
 }
 
 

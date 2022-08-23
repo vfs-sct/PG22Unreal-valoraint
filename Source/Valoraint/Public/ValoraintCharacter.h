@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AbilityInterface.h"
+#include "EmittSpawnerProjectile.h"
 #include "GameFramework/Character.h"
 #include "ValoraintCharacter.generated.h"
 
@@ -101,28 +102,38 @@ public:
 	UFUNCTION(NetMulticast, Unreliable)
 	void SwapWeapons();
 
+	// TODO: Wait to be implemented
 	UFUNCTION(BlueprintCallable)
 	bool CanDash() const;
 
+	// First Ability
 	// Server function with validation to prevent cheating
 	UFUNCTION(Server, Reliable, WithValidation)
 	void FirstAbilityServer();
 	
+	virtual void FirstAbility_Implementation() override;
+
+	// Multicast function to spawn particle effects
 	UFUNCTION(NetMulticast, Unreliable)
 	void FirstAbilityNetMulticast();
 
-	virtual void FirstAbility_Implementation() override;
-
+	// Second Ability
+	// Server function with validation to prevent cheating
 	UFUNCTION(Server, Reliable, WithValidation)
 	void SecondAbilityServer();
 	
+	virtual void SecondAbility_Implementation() override;
+
+	// Multicast function to spawn particle effects
 	UFUNCTION(NetMulticast, Unreliable)
 	void SecondAbilityNetMulticast();
 
-	virtual void SecondAbility_Implementation() override;
+	// Property for Second ability
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=SecondAbility)
+	TSubclassOf<AEmittSpawnerProjectile> EmitterSpawnProjectile;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSubclassOf<AValoraintProjectile> FlashbangProjectile;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category=SecondAbility)
+	int32 NumOfFlashbang = 3;
 
 protected:
 
