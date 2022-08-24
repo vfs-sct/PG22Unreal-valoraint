@@ -51,11 +51,6 @@ class AValoraintCharacter : public ACharacter, public IAbilityInterface
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
 
-
-	
-	
-	
-
 public:
 	AValoraintCharacter();
 
@@ -84,8 +79,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	float Health;
 
-	
-
 	/** Gun muzzle's offset from the characters location */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	FVector GunOffset;
@@ -105,12 +98,14 @@ public:
 	/** Whether to use motion controller location for aiming. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	uint8 bUsingMotionControllers : 1;
+
+	// Proxy for multicast swap, to ensure replication to all clients
+	UFUNCTION(Server, Reliable)
+	void ServerSwapWeapons();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSwapWeapons();
 	
-	UFUNCTION(NetMulticast, Unreliable)
-	void SwapWeapons();
-
-
-
 	//////////////////////// First Ability /////////////////////////////////
 
 	// Fire First Ability 
@@ -130,11 +125,9 @@ public:
 	virtual void FirstAbility_Implementation() override;
 
 	// Multicast function to spawn particle effects
-	UFUNCTION(NetMulticast, Unreliable)
+	UFUNCTION(Server, Unreliable)
 	void FirstAbilityNetMulticast();
 	
-	
-
 	//////////////////////// Second Ability /////////////////////////////////
 
 	// Fire Second Ability
@@ -160,19 +153,21 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Hit();
 
+	// Proxy for multicast set up, so it replicates to clients
+	UFUNCTION(BlueprintCallable, Server, Reliable)
+	void ServerSetupWeapons() const;
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSetupWeapons() const;
 	
 	virtual void Destroyed() override;
 
 protected:
 
-	void SetupWeapons() const;
-
 	void SwapWeaponsInternal(USkeletalMeshComponent* Primary, USkeletalMeshComponent* Secondary);
 
 	UFUNCTION(Server, Reliable)
 	void Shoot();
-
-	
 	
 	/** Fires a projectile. */
 	void OnFire();
@@ -222,8 +217,5 @@ public:
 	USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
 	/** Returns FirstPersonCameraComponent subobject **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
-
-	
-
 };
 

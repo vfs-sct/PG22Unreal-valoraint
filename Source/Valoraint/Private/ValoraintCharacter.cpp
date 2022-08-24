@@ -51,7 +51,7 @@ AValoraintCharacter::AValoraintCharacter()
 	FP_Gun = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FP_Gun"));
 	FP_Gun->bCastDynamicShadow = false;
 	FP_Gun->CastShadow = false;
-	// FP_Gun->SetupAttachment(Mesh1P, TEXT("GripPoint"));
+	FP_Gun->SetIsReplicated(true);
 	FP_Gun->SetupAttachment(RootComponent);
 
 	FP_MuzzleLocation = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzleLocation"));
@@ -62,8 +62,8 @@ AValoraintCharacter::AValoraintCharacter()
 	SecondaryGun = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SecondaryWeapon"));
 	SecondaryGun->bCastDynamicShadow = false;
 	SecondaryGun->CastShadow = false;
-	// FP_Gun->SetupAttachment(Mesh1P, TEXT("GripPoint"));
 	SecondaryGun->SetupAttachment(RootComponent);
+	SecondaryGun->SetIsReplicated(true);
 	SecondaryGun->SetOwnerNoSee(true);
 	
 	SecondaryMuzzle = CreateDefaultSubobject<USceneComponent>(TEXT("SecondaryMuzzle"));
@@ -87,8 +87,11 @@ void AValoraintCharacter::BeginPlay()
 	FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget,true), TEXT("GripPoint"));
 	SecondaryGun->AttachToComponent(NetworkedCharacterMesh, FAttachmentTransformRules(EAttachmentRule::KeepRelative,true), TEXT("HolsterPoint"));
 	bIsPrimaryEquipped = true;
-	SetupWeapons();
 	Mesh1P->SetHiddenInGame(false, true);
+
+	FTimerHandle SetupTimer;
+	GetWorldTimerManager().SetTimer(SetupTimer, this, &AValoraintCharacter::ServerSetupWeapons, 2.0f, false);
+	ServerSetupWeapons();
 }
 
 
@@ -131,7 +134,7 @@ void AValoraintCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAction("SecondAbility", IE_Pressed, this, &AValoraintCharacter::FireSecondAbility);
 	
 	// Swap Weapons
-	PlayerInputComponent->BindAction("SwapWeapon", IE_Pressed, this, &AValoraintCharacter::SwapWeapons);
+	PlayerInputComponent->BindAction("SwapWeapon", IE_Pressed, this, &AValoraintCharacter::ServerSwapWeapons);
 }
 
 void AValoraintCharacter::Shoot_Implementation()
@@ -331,7 +334,12 @@ void AValoraintCharacter::SecondAbilityNetMulticast_Implementation()
 //////////////////////////////////////////////////////////////////////////
 // Swap Weapon
 
-void AValoraintCharacter::SwapWeapons_Implementation()
+void AValoraintCharacter::ServerSwapWeapons_Implementation()
+{
+	MulticastSwapWeapons();
+}
+
+void AValoraintCharacter::MulticastSwapWeapons_Implementation()
 {
 	if(!PrimaryWeapon || !SecondaryWeapon) return;
 
@@ -344,18 +352,6 @@ void AValoraintCharacter::SwapWeapons_Implementation()
 	}
 	
 	bIsPrimaryEquipped = !bIsPrimaryEquipped;
-}
-
-
-
-void AValoraintCharacter::SetupWeapons() const
-{
-	if(PrimaryWeapon) {
-		FP_Gun->SetSkeletalMesh(PrimaryWeapon->GunMesh);
-	}
-	
-	if(!SecondaryWeapon) return;
-	SecondaryGun->SetSkeletalMesh(SecondaryWeapon->GunMesh);
 }
 
 void AValoraintCharacter::SwapWeaponsInternal(USkeletalMeshComponent* Primary, USkeletalMeshComponent* Secondary)
@@ -398,6 +394,21 @@ void AValoraintCharacter::Hit_Implementation()
 	FString TheFloatStr = FString::SanitizeFloat(Health);
 	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, *TheFloatStr );
 	
+}
+
+void AValoraintCharacter::ServerSetupWeapons_Implementation() const
+{
+	MulticastSetupWeapons();
+}
+
+void AValoraintCharacter::MulticastSetupWeapons_Implementation() const
+{
+	if(PrimaryWeapon) {
+		FP_Gun->SetSkeletalMesh(PrimaryWeapon->GunMesh);
+	}
+
+	if(!SecondaryWeapon) return;
+	SecondaryGun->SetSkeletalMesh(SecondaryWeapon->GunMesh);
 }
 
 void AValoraintCharacter::Destroyed()
