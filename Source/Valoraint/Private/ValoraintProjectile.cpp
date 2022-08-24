@@ -35,13 +35,6 @@ void AValoraintProjectile::BeginPlay()
 	Collider->OnComponentHit.AddDynamic(this, &AValoraintProjectile::OnHit);
 }
 
-// Called every frame
-void AValoraintProjectile::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-
 void AValoraintProjectile::OnHit_Implementation(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
 	AValoraintCharacter* Player = Cast<AValoraintCharacter>(OtherActor);
