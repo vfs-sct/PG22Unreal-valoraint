@@ -1,4 +1,4 @@
-// Copyright (C) Shatrujit Aditya Kumar 2022, All Rights Reserved
+// Copyright (C) Shatrujit Aditya Kumar, Andre Dupuis 2022, All Rights Reserved
 
 
 #include "ValoraintProjectile.h"
@@ -22,8 +22,17 @@ AValoraintProjectile::AValoraintProjectile()
 	Collider->OnComponentHit.AddDynamic(this, &AValoraintProjectile::OnHit);
 
 	ProjMoveComp->SetUpdatedComponent(Collider);
+
+	ProjMoveComp->InitialSpeed = 3000;
+	ProjMoveComp->MaxSpeed = 3000;
+	ProjMoveComp->ProjectileGravityScale = 0.0f;
 	bReplicates = true;
+
+	hasHit = false;
+	Damage = 0.0f;
+	Instigator = nullptr;
 }
+
 
 // Called when the game starts or when spawned
 void AValoraintProjectile::BeginPlay()
@@ -32,22 +41,23 @@ void AValoraintProjectile::BeginPlay()
 	Collider->OnComponentHit.AddDynamic(this, &AValoraintProjectile::OnHit);
 }
 
-// Called every frame
-void AValoraintProjectile::Tick(float DeltaTime)
+// Set it's damage and instigator and ignore the instifator
+void AValoraintProjectile::Initialize(float damage, AValoraintCharacter* instigator)
 {
-	Super::Tick(DeltaTime);
-
+	this->Damage = damage;
+	this->Instigator = instigator;
+	Collider->IgnoreActorWhenMoving(Instigator, true);
 }
 
-void AValoraintProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
+// Damage target if it's a player, destroy regardless
+void AValoraintProjectile::OnHit_Implementation(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
 	AValoraintCharacter* Player = Cast<AValoraintCharacter>(OtherActor);
-	if(OtherActor == Player)
+	if(Player && hasHit == false)
 	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, "Hit");
-		
+		Player->Hit(this);
+		hasHit = true;
 	}
-
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, "Not Hit");
+	
 	Destroy();
 }

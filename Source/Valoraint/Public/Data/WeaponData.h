@@ -7,6 +7,7 @@
 #include "Engine/DataAsset.h"
 #include "WeaponData.generated.h"
 
+class AValoraintProjectile;
 /**
  * 
  */
@@ -43,10 +44,8 @@ public:
 	USkeletalMesh* GunMesh;
 	
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	UStaticMesh* AmmoMesh;
+	TSubclassOf<AValoraintProjectile> AmmoType;
 	
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	EGunType GunType;
-
-	
 };

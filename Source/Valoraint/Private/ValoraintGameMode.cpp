@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright (C) Shatrujit Aditya Kumar 2022, All Rights Reserved
 
 #include "ValoraintGameMode.h"
 #include "ValoraintHUD.h"

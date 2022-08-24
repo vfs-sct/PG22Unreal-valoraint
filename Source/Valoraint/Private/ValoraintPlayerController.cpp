@@ -13,10 +13,11 @@ void AValoraintPlayerController::SetupInputComponent()
 
 	UWorld* world = GetWorld();
 	if(!world) return;
-	
+
 	InputComponent->BindAction("Shop", IE_Pressed, this, &AValoraintPlayerController::ToggleShop);
 }
 
+// Toggle shop display on/off
 void AValoraintPlayerController::ToggleShop()
 {
 	if(AValoraintHUD* hud = GetHUD<AValoraintHUD>())

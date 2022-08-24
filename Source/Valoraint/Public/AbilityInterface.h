@@ -1,4 +1,4 @@
-// Copyright (C) Shatrujit Aditya Kumar 2022, All Rights Reserved
+// Copyright (C) Jim Chen 2022, All Rights Reserved
 
 #pragma once
 
@@ -23,9 +23,9 @@ class VALORAINT_API IAbilityInterface
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 	
 public:
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void FirstAbility();
 	
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void SecondAbility();
 };

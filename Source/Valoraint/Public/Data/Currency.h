@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// Copyright (C) Shatrujit Aditya Kumar 2022, All Rights Reserved
+#pragma once
 
 #include "Currency.generated.h"
 
@@ -13,6 +14,7 @@ struct FCurrency
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	float PremiumCurrency;
 
+	// Override addition/subtraction for easy transactions
 	FCurrency operator+(const FCurrency& Other) const
 	{
 		return FCurrency{(this->InGameCurrent + Other.InGameCurrent), (this->PremiumCurrency + Other.PremiumCurrency)};

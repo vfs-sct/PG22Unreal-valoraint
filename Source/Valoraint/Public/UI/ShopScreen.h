@@ -18,6 +18,7 @@ class VALORAINT_API UShopScreen : public UUserWidget // public IUserObjectListEn
 
 public:
 
+	// References to the bound layouts
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (BindWidget))
 	UListView* PrimaryWeaponsLayout;
 	
