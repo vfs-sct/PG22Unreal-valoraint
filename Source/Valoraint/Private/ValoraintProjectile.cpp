@@ -22,6 +22,10 @@ AValoraintProjectile::AValoraintProjectile()
 	Collider->OnComponentHit.AddDynamic(this, &AValoraintProjectile::OnHit);
 
 	ProjMoveComp->SetUpdatedComponent(Collider);
+
+	ProjMoveComp->InitialSpeed = 3000;
+	ProjMoveComp->MaxSpeed = 3000;
+	ProjMoveComp->ProjectileGravityScale = 0.0f;
 	bReplicates = true;
 
 	hasHit = false;

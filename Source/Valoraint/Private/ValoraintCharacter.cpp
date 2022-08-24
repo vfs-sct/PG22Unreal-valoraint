@@ -156,6 +156,8 @@ void AValoraintCharacter::Shoot_Implementation()
 {
 	const UWeaponData* Equipped = bIsPrimaryEquipped ? PrimaryWeapon : SecondaryWeapon;
 	int32 magUse = bIsPrimaryEquipped ? PrimaryMagazineUse : SecondaryMagazineUse;
+	TSubclassOf<AValoraintProjectile> ProjectileClass = Equipped->AmmoType;
+	
 	// try and fire a projectile
 	if (ProjectileClass != nullptr)
 	{
