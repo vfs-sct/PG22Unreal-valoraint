@@ -1,4 +1,4 @@
-// Copyright (C) Shatrujit Aditya Kumar 2022, All Rights Reserved
+// Copyright (C) Shatrujit Aditya Kumar, Andre Dupuis 2022, All Rights Reserved
 
 
 #include "ValoraintProjectile.h"
@@ -41,6 +41,7 @@ void AValoraintProjectile::BeginPlay()
 	Collider->OnComponentHit.AddDynamic(this, &AValoraintProjectile::OnHit);
 }
 
+// Set it's damage and instigator and ignore the instifator
 void AValoraintProjectile::Initialize(float damage, AValoraintCharacter* instigator)
 {
 	this->Damage = damage;
@@ -48,6 +49,7 @@ void AValoraintProjectile::Initialize(float damage, AValoraintCharacter* instiga
 	Collider->IgnoreActorWhenMoving(Instigator, true);
 }
 
+// Damage target if it's a player, destroy regardless
 void AValoraintProjectile::OnHit_Implementation(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
 	AValoraintCharacter* Player = Cast<AValoraintCharacter>(OtherActor);

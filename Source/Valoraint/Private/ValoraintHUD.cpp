@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright (C) Shatrujit Aditya Kumar 2022, All Rights Reserved
 
 #include "ValoraintHUD.h"
 #include "Engine/Canvas.h"
@@ -42,6 +42,8 @@ void AValoraintHUD::ToggleShop()
 	if(!world) return;
 
 	APlayerController* PlayerController = GetOwningPlayerController();
+
+	// If the screen doesn't exist, create and draw
 	if(!ShopScreen)
 	{
 		PlayerController->SetShowMouseCursor(true);
@@ -50,6 +52,7 @@ void AValoraintHUD::ToggleShop()
 		return;
 	}
 
+	// If it exists, destroy and set the reference to nullptr
 	PlayerController->SetShowMouseCursor(false);
 	ShopScreen->RemoveFromParent();
 	ShopScreen = nullptr;

@@ -1,6 +1,5 @@
 // Copyright (C) Shatrujit Aditya Kumar 2022, All Rights Reserved
 
-
 #include "UI/ShopScreen.h"
 
 #include "ValoraintGameState.h"
@@ -15,6 +14,7 @@ void UShopScreen::NativeOnInitialized()
 
 	if(!world) return;
 
+	// Group weapons into two columns based on the GunType enum
 	if(AValoraintGameState* GameState = world->GetGameState<AValoraintGameState>())
 	{
 		TArray<UWeaponData*> PrimaryWeapons = GameState->AllWeapons.FilterByPredicate([](const UWeaponData* weapon)->bool

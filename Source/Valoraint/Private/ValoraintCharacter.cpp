@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright (C) Shatrujit Aditya Kumar, Jim Chen, Andre Dupuis 2022, All Rights Reserved
 
 #include "ValoraintCharacter.h"
 
@@ -97,7 +97,7 @@ void AValoraintCharacter::BeginPlay()
 void AValoraintCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
+	// Couldn't get IE_Repeat working so turned a bool on/off on IE_Pressed and IE_Released
 	if(bIsShooting) Shoot();
 }
 
@@ -109,6 +109,8 @@ void AValoraintCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	// Returning replicated individual bools back to individual AValoraintCharacter
 	DOREPLIFETIME_CONDITION(AValoraintCharacter, bCanFirstAbility, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(AValoraintCharacter, bCanSecondAbility, COND_OwnerOnly);
+
+	// Replicate magazine size back to the individual client
 	DOREPLIFETIME_CONDITION(AValoraintCharacter, PrimaryMagazineUse, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(AValoraintCharacter, SecondaryMagazineUse, COND_OwnerOnly);
 }
@@ -126,6 +128,7 @@ void AValoraintCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
 	// Bind fire event
+	// Couldn't get IE_Repeat working so turned a bool on/off on IE_Pressed and IE_Released
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AValoraintCharacter::StartShooting);
 	PlayerInputComponent->BindAction("Fire", IE_Released, this, &AValoraintCharacter::StopShooting);
 
@@ -133,8 +136,7 @@ void AValoraintCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAxis("MoveForward", this, &AValoraintCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AValoraintCharacter::MoveRight);
 
-	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
-	// "turn" handles devices that provide an absolute delta, such as a mouse.
+	// Bind Rotation
 	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 
@@ -150,6 +152,7 @@ void AValoraintCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 
 void AValoraintCharacter::Shoot_Implementation()
 {
+	// Get the currently equipped weapon
 	const UWeaponData* Equipped = bIsPrimaryEquipped ? PrimaryWeapon : SecondaryWeapon;
 	const int32 magUse = bIsPrimaryEquipped ? PrimaryMagazineUse : SecondaryMagazineUse;
 	const TSubclassOf<AValoraintProjectile> ProjectileClass = Equipped->AmmoType;
@@ -158,8 +161,11 @@ void AValoraintCharacter::Shoot_Implementation()
 	if (ProjectileClass != nullptr)
 	{
 		UWorld* const World = GetWorld();
-		
+
+		// Return if fire rate hasn't elapsed yet
 		if(!isnan(LastFireTime) && UKismetSystemLibrary::GetGameTimeInSeconds(World) - LastFireTime < Equipped->FireRate) return;
+
+		// If we're out of ammo, print a message and stop shooting
 		if(magUse >= Equipped->MagazineSize)
 		{
 			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.0f, FColor::Purple, TEXT("Out of Ammo, 'R' to reload"));
@@ -170,7 +176,6 @@ void AValoraintCharacter::Shoot_Implementation()
 		if (World != nullptr)
 		{
 			const FRotator SpawnRotation = GetControlRotation();
-			// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
 			const FVector SpawnLocation = (FP_MuzzleLocation != nullptr ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + GetActorForwardVector() * 50;
 
 			//Set Spawn Collision Handling Override
@@ -181,6 +186,7 @@ void AValoraintCharacter::Shoot_Implementation()
 			AValoraintProjectile* Projectile = World->SpawnActor<AValoraintProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
 			if(Projectile)
 			{
+				// Init damage and instigator, then adjust last fire time and relevant magazine size
 				Projectile->Initialize(Equipped->DamageAmount, this);
 				LastFireTime = UKismetSystemLibrary::GetGameTimeInSeconds(World);
 				if(bIsPrimaryEquipped) ++PrimaryMagazineUse;
@@ -337,9 +343,8 @@ void AValoraintCharacter::SecondAbility_Implementation()
 		if (world != nullptr)
 		{
 			const FRotator SpawnRotation = GetControlRotation();
-			const USceneComponent* Muzzle = FP_MuzzleLocation;//(bIsPrimaryEquipped ? FP_MuzzleLocation : SecondaryMuzzle);
 			// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-			const FVector SpawnLocation = ((Muzzle != nullptr) ? Muzzle->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
+			const FVector SpawnLocation = (FP_MuzzleLocation != nullptr ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
 
 			//Set Spawn Collision Handling Override
 			FActorSpawnParameters ActorSpawnParams;
@@ -384,17 +389,21 @@ void AValoraintCharacter::MulticastSwapWeapons_Implementation()
 	bIsPrimaryEquipped = !bIsPrimaryEquipped;
 }
 
+// Switches the positions of primary and secondary weapons, changes visibility rules and resets the muzzle position
 void AValoraintCharacter::SwapWeaponsInternal(USkeletalMeshComponent* Primary, USkeletalMeshComponent* Secondary)
 {
 	Secondary->DetachFromComponent({EDetachmentRule::KeepRelative, false});
 	Secondary->SetOwnerNoSee(false);
 	Secondary->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget,true), TEXT("GripPoint"));
+	
 	SetMuzzle(Secondary);
+	
 	Primary->DetachFromComponent({EDetachmentRule::KeepRelative, false});
 	Primary->SetOwnerNoSee(true);
 	Primary->AttachToComponent(NetworkedCharacterMesh, FAttachmentTransformRules(EAttachmentRule::KeepRelative,true), TEXT("HolsterPoint"));
 }
 
+// Sets the muzzle location to the new SK component's Muzzle socket
 void AValoraintCharacter::SetMuzzle(USkeletalMeshComponent* Gun) const
 {
 	FP_MuzzleLocation->DetachFromComponent({EDetachmentRule::KeepRelative, false});
@@ -431,6 +440,7 @@ void AValoraintCharacter::MoveRight(float Value)
 	}
 }
 
+// Toggles for start and stop shooting
 void AValoraintCharacter::StartShooting()
 {
 	bIsShooting = true;
@@ -456,11 +466,13 @@ void AValoraintCharacter::Hit_Implementation(AValoraintProjectile* Projectile)
 	
 }
 
+// Wrapper for the multicast
 void AValoraintCharacter::ServerSetupWeapons_Implementation() const
 {
 	MulticastSetupWeapons();
 }
 
+// Sets the skeletal mesh if the Weapon Data asset exists
 void AValoraintCharacter::MulticastSetupWeapons_Implementation() const
 {
 	if(PrimaryWeapon) {
@@ -471,11 +483,14 @@ void AValoraintCharacter::MulticastSetupWeapons_Implementation() const
 	SecondaryGun->SetSkeletalMesh(SecondaryWeapon->GunMesh);
 }
 
+// Wrapper for the multicast
 void AValoraintCharacter::ServerAddPurchasedWeapons_Implementation(UWeaponData* Primary, UWeaponData* Secondary)
 {
 	MulticastAddPurchasedWeapons(Primary, Secondary);
 }
 
+// Changes equipped primary and secondary weapons and resets the magazine count if valid
+// Resets Muzzle location for the active weapon
 void AValoraintCharacter::MulticastAddPurchasedWeapons_Implementation(UWeaponData* Primary,
 	UWeaponData* Secondary)
 {

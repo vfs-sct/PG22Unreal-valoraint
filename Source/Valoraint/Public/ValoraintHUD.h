@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright (C) Shatrujit Aditya Kumar 2022, All Rights Reserved
 
 #pragma once 
 
@@ -21,9 +21,11 @@ public:
 	UFUNCTION()
 	void ToggleShop();
 
+	// Reference to the drawn widget
 	UPROPERTY(BlueprintReadOnly)
 	UShopScreen* ShopScreen = nullptr;
 
+	// Class of widget to draw
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UShopScreen> ShopScreenClass;
 

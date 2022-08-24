@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright (C) Shatrujit Aditya Kumar, Jim Chen, Andre Dupuis 2022, All Rights Reserved
 
 #pragma once
 
@@ -93,7 +93,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	uint8 bUsingMotionControllers : 1;
 	
-	/** Boounty: Reward for kill */
+	/** Bounty: Reward for kill */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FCurrency Bounty;
 

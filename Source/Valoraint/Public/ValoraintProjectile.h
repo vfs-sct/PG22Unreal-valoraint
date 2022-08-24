@@ -1,4 +1,4 @@
-// Copyright (C) Shatrujit Aditya Kumar 2022, All Rights Reserved
+// Copyright (C) Shatrujit Aditya Kumar, Andre Dupuis 2022, All Rights Reserved
 
 #pragma once
 
