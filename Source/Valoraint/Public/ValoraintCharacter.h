@@ -34,7 +34,7 @@ class AValoraintCharacter : public ACharacter, public IAbilityInterface
 
 	/** Primary Gun mesh */
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
-	USkeletalMeshComponent* FP_Gun;
+	USkeletalMeshComponent* PrimaryGun;
 
 	/** Location on primary gun where projectiles should spawn. */
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
@@ -43,10 +43,6 @@ class AValoraintCharacter : public ACharacter, public IAbilityInterface
 	/** Secondary weapon mesh */
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 	USkeletalMeshComponent* SecondaryGun;
-
-	/** Location on secondary gun where projectiles should spawn. */
-	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
-	USceneComponent* SecondaryMuzzle;
 
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -161,7 +157,8 @@ public:
 	void ServerAddPurchasedWeapons(UWeaponData* Primary, UWeaponData* Secondary);
 
 protected:
-
+	
+	void SetMuzzle(USkeletalMeshComponent* Gun) const;
 	void SwapWeaponsInternal(USkeletalMeshComponent* Primary, USkeletalMeshComponent* Secondary);
 	
 	UFUNCTION(Server, Reliable)

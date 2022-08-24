@@ -45,6 +45,7 @@ void AValoraintProjectile::Initialize(float damage, AValoraintCharacter* instiga
 {
 	this->Damage = damage;
 	this->Instigator = instigator;
+	Collider->IgnoreActorWhenMoving(Instigator, true);
 }
 
 void AValoraintProjectile::OnHit_Implementation(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
@@ -52,7 +53,6 @@ void AValoraintProjectile::OnHit_Implementation(UPrimitiveComponent* HitComponen
 	AValoraintCharacter* Player = Cast<AValoraintCharacter>(OtherActor);
 	if(Player && hasHit == false)
 	{
-		SetInstigator(Player);
 		Player->Hit(this);
 		hasHit = true;
 	}

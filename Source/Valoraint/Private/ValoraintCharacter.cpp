@@ -48,15 +48,15 @@ AValoraintCharacter::AValoraintCharacter()
 	Mesh1P->SetRelativeLocation(FVector(-0.5f, -4.4f, -155.7f));
 
 	// Create a gun mesh component
-	FP_Gun = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FP_Gun"));
-	FP_Gun->bCastDynamicShadow = false;
-	FP_Gun->CastShadow = false;
-	FP_Gun->SetIsReplicated(true);
-	FP_Gun->SetupAttachment(RootComponent);
+	PrimaryGun = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FP_Gun"));
+	PrimaryGun->bCastDynamicShadow = false;
+	PrimaryGun->CastShadow = false;
+	PrimaryGun->SetIsReplicated(true);
+	PrimaryGun->SetupAttachment(RootComponent);
 
 	FP_MuzzleLocation = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzleLocation"));
-	FP_MuzzleLocation->SetupAttachment(FP_Gun);
-	FP_MuzzleLocation->SetRelativeLocation(FP_Gun->GetSocketLocation("Muzzle"));
+	FP_MuzzleLocation->SetupAttachment(PrimaryGun);
+	FP_MuzzleLocation->SetRelativeLocation(PrimaryGun->GetSocketLocation("Muzzle"));
 	
 	// Create secondary gun mesh component
 	SecondaryGun = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SecondaryWeapon"));
@@ -65,10 +65,6 @@ AValoraintCharacter::AValoraintCharacter()
 	SecondaryGun->SetupAttachment(RootComponent);
 	SecondaryGun->SetIsReplicated(true);
 	SecondaryGun->SetOwnerNoSee(true);
-	
-	SecondaryMuzzle = CreateDefaultSubobject<USceneComponent>(TEXT("SecondaryMuzzle"));
-	SecondaryMuzzle->SetupAttachment(SecondaryGun);
-	SecondaryMuzzle->SetRelativeLocation(SecondaryGun->GetSocketLocation("Muzzle"));
 
 	// Default offset from the character location for projectiles to spawn
 	GunOffset = FVector(100.0f, 0.0f, 10.0f);
@@ -88,7 +84,7 @@ void AValoraintCharacter::BeginPlay()
 	SecondaryMagazineUse = 0;
 	
 	//Attach gun mesh component to Skeleton, doing it here because the skeleton is not yet created in the constructor
-	FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget,true), TEXT("GripPoint"));
+	PrimaryGun->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget,true), TEXT("GripPoint"));
 	SecondaryGun->AttachToComponent(NetworkedCharacterMesh, FAttachmentTransformRules(EAttachmentRule::KeepRelative,true), TEXT("HolsterPoint"));
 	bIsPrimaryEquipped = true;
 	Mesh1P->SetHiddenInGame(false, true);
@@ -155,8 +151,8 @@ void AValoraintCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 void AValoraintCharacter::Shoot_Implementation()
 {
 	const UWeaponData* Equipped = bIsPrimaryEquipped ? PrimaryWeapon : SecondaryWeapon;
-	int32 magUse = bIsPrimaryEquipped ? PrimaryMagazineUse : SecondaryMagazineUse;
-	TSubclassOf<AValoraintProjectile> ProjectileClass = Equipped->AmmoType;
+	const int32 magUse = bIsPrimaryEquipped ? PrimaryMagazineUse : SecondaryMagazineUse;
+	const TSubclassOf<AValoraintProjectile> ProjectileClass = Equipped->AmmoType;
 	
 	// try and fire a projectile
 	if (ProjectileClass != nullptr)
@@ -167,15 +163,15 @@ void AValoraintCharacter::Shoot_Implementation()
 		if(magUse >= Equipped->MagazineSize)
 		{
 			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.0f, FColor::Purple, TEXT("Out of Ammo, 'R' to reload"));
+			StopShooting();
 			return;
 		}
 		
 		if (World != nullptr)
 		{
 			const FRotator SpawnRotation = GetControlRotation();
-			const USceneComponent* Muzzle = bIsPrimaryEquipped ? FP_MuzzleLocation : SecondaryMuzzle;
 			// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-			const FVector SpawnLocation = (Muzzle != nullptr ? Muzzle->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
+			const FVector SpawnLocation = (FP_MuzzleLocation != nullptr ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + GetActorForwardVector() * 50;
 
 			//Set Spawn Collision Handling Override
 			FActorSpawnParameters ActorSpawnParams;
@@ -183,10 +179,13 @@ void AValoraintCharacter::Shoot_Implementation()
 
 			// spawn the projectile at the muzzle
 			AValoraintProjectile* Projectile = World->SpawnActor<AValoraintProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
-			Projectile->Initialize(Equipped->DamageAmount, this);
-			LastFireTime = UKismetSystemLibrary::GetGameTimeInSeconds(World);
-			if(bIsPrimaryEquipped) ++PrimaryMagazineUse;
-			else ++SecondaryMagazineUse;
+			if(Projectile)
+			{
+				Projectile->Initialize(Equipped->DamageAmount, this);
+				LastFireTime = UKismetSystemLibrary::GetGameTimeInSeconds(World);
+				if(bIsPrimaryEquipped) ++PrimaryMagazineUse;
+				else ++SecondaryMagazineUse;
+			}
 		}
 	}
 
@@ -338,7 +337,7 @@ void AValoraintCharacter::SecondAbility_Implementation()
 		if (world != nullptr)
 		{
 			const FRotator SpawnRotation = GetControlRotation();
-			const USceneComponent* Muzzle = (bIsPrimaryEquipped ? FP_MuzzleLocation : SecondaryMuzzle);
+			const USceneComponent* Muzzle = FP_MuzzleLocation;//(bIsPrimaryEquipped ? FP_MuzzleLocation : SecondaryMuzzle);
 			// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
 			const FVector SpawnLocation = ((Muzzle != nullptr) ? Muzzle->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
 
@@ -376,10 +375,10 @@ void AValoraintCharacter::MulticastSwapWeapons_Implementation()
 
 	if(bIsPrimaryEquipped)
 	{
-		SwapWeaponsInternal(FP_Gun, SecondaryGun);
+		SwapWeaponsInternal(PrimaryGun, SecondaryGun);
 	} else
 	{
-		SwapWeaponsInternal(SecondaryGun, FP_Gun);
+		SwapWeaponsInternal(SecondaryGun, PrimaryGun);
 	}
 	LastFireTime = NAN;
 	bIsPrimaryEquipped = !bIsPrimaryEquipped;
@@ -390,9 +389,16 @@ void AValoraintCharacter::SwapWeaponsInternal(USkeletalMeshComponent* Primary, U
 	Secondary->DetachFromComponent({EDetachmentRule::KeepRelative, false});
 	Secondary->SetOwnerNoSee(false);
 	Secondary->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget,true), TEXT("GripPoint"));
+	SetMuzzle(Secondary);
 	Primary->DetachFromComponent({EDetachmentRule::KeepRelative, false});
 	Primary->SetOwnerNoSee(true);
 	Primary->AttachToComponent(NetworkedCharacterMesh, FAttachmentTransformRules(EAttachmentRule::KeepRelative,true), TEXT("HolsterPoint"));
+}
+
+void AValoraintCharacter::SetMuzzle(USkeletalMeshComponent* Gun) const
+{
+	FP_MuzzleLocation->DetachFromComponent({EDetachmentRule::KeepRelative, false});
+	FP_MuzzleLocation->AttachToComponent(Gun, FAttachmentTransformRules(EAttachmentRule::SnapToTarget,true), TEXT("Muzzle"));
 }
 
 // Resets magazine use for active weapon
@@ -458,7 +464,7 @@ void AValoraintCharacter::ServerSetupWeapons_Implementation() const
 void AValoraintCharacter::MulticastSetupWeapons_Implementation() const
 {
 	if(PrimaryWeapon) {
-		FP_Gun->SetSkeletalMesh(PrimaryWeapon->GunMesh);
+		PrimaryGun->SetSkeletalMesh(PrimaryWeapon->GunMesh);
 	}
 
 	if(!SecondaryWeapon) return;
@@ -473,8 +479,18 @@ void AValoraintCharacter::ServerAddPurchasedWeapons_Implementation(UWeaponData* 
 void AValoraintCharacter::MulticastAddPurchasedWeapons_Implementation(UWeaponData* Primary,
 	UWeaponData* Secondary)
 {
-	if(Primary) PrimaryWeapon = Primary;
-	if(Secondary) SecondaryWeapon = Secondary;
+	if(Primary)
+	{
+		PrimaryWeapon = Primary;
+		PrimaryMagazineUse = 0;
+		if(bIsPrimaryEquipped) SetMuzzle(PrimaryGun);
+	}
+	if(Secondary)
+	{
+		SecondaryWeapon = Secondary;
+		SecondaryMagazineUse = 0;
+		if(!bIsPrimaryEquipped) SetMuzzle(SecondaryGun);
+	}
 
 	ServerSetupWeapons();
 }
