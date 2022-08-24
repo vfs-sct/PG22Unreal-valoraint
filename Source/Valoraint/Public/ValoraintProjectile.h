@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "ValoraintProjectile.generated.h"
 
+class AValoraintCharacter;
 class USphereComponent;
 class UStaticMeshComponent;
 class UProjectileMovementComponent;
@@ -31,6 +32,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	bool hasHit;
 
+	float Damage;
+	AValoraintCharacter* Instigator;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -39,5 +43,6 @@ protected:
 public:	
 	UFUNCTION(Server, Reliable)
 	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
-	
+
+	void Initialize(float damage, AValoraintCharacter* instigator);
 };

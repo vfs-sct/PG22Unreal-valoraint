@@ -25,6 +25,8 @@ AValoraintProjectile::AValoraintProjectile()
 	bReplicates = true;
 
 	hasHit = false;
+	Damage = 0.0f;
+	Instigator = nullptr;
 }
 
 
@@ -35,23 +37,21 @@ void AValoraintProjectile::BeginPlay()
 	Collider->OnComponentHit.AddDynamic(this, &AValoraintProjectile::OnHit);
 }
 
+void AValoraintProjectile::Initialize(float damage, AValoraintCharacter* instigator)
+{
+	this->Damage = damage;
+	this->Instigator = instigator;
+}
+
 void AValoraintProjectile::OnHit_Implementation(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
 	AValoraintCharacter* Player = Cast<AValoraintCharacter>(OtherActor);
 	if(Player && hasHit == false)
 	{
 		SetInstigator(Player);
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, "Hit");
-		Player->Hit();
+		Player->Hit(this);
 		hasHit = true;
-		Destroy();
-		
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, "Not Hit");
-		Destroy();
 	}
 	
-	
+	Destroy();
 }

@@ -58,6 +58,7 @@ public:
 protected:
 	virtual void BeginPlay();
 
+	virtual void Tick(float DeltaSeconds) override;
 	
 	// Function to return properties that are used for network replication
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -99,6 +100,10 @@ public:
 	/** Whether to use motion controller location for aiming. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	uint8 bUsingMotionControllers : 1;
+	
+	/** Boounty: Reward for kill */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FCurrency Bounty;
 
 	// Proxy for multicast swap, to ensure replication to all clients
 	UFUNCTION(Server, Reliable)
@@ -149,7 +154,7 @@ public:
 	void SecondAbilityNetMulticast();
 
 	UFUNCTION(Server, Reliable)
-	void Hit();
+	void Hit(AValoraintProjectile* Projectile);
 
 	// Proxy for multicast set up, so it replicates to clients
 	UFUNCTION(BlueprintCallable, Server, Reliable)
@@ -162,9 +167,13 @@ public:
 protected:
 
 	void SwapWeaponsInternal(USkeletalMeshComponent* Primary, USkeletalMeshComponent* Secondary);
-
+	
 	UFUNCTION(Server, Reliable)
 	void Shoot();
+
+	// Reload equipped weapon
+	UFUNCTION(Server, Reliable)
+	void Reload();
 	
 	/** Handles moving forward/backward */
 	void MoveForward(float Val);
@@ -173,6 +182,16 @@ protected:
 	void MoveRight(float Val);
 
 	bool bIsPrimaryEquipped;
+	bool bIsShooting;
+	float LastFireTime;
+	
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = Weapon)
+	int32 PrimaryMagazineUse;
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = Weapon)
+	int32 SecondaryMagazineUse;
+
+	void StartShooting();
+	void StopShooting();
 
 	// Property for first ability
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Dash)

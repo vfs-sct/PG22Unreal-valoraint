@@ -2,7 +2,6 @@
 
 #include "ValoraintCharacter.h"
 
-#include "SkeletalRenderPublic.h"
 #include "ValoraintProjectile.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
@@ -13,6 +12,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "MotionControllerComponent.h"
+#include "ValoraintPlayerState.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -82,7 +82,11 @@ void AValoraintCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
-
+	
+	LastFireTime = NAN;
+	PrimaryMagazineUse = 0;
+	SecondaryMagazineUse = 0;
+	
 	//Attach gun mesh component to Skeleton, doing it here because the skeleton is not yet created in the constructor
 	FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget,true), TEXT("GripPoint"));
 	SecondaryGun->AttachToComponent(NetworkedCharacterMesh, FAttachmentTransformRules(EAttachmentRule::KeepRelative,true), TEXT("HolsterPoint"));
@@ -94,6 +98,13 @@ void AValoraintCharacter::BeginPlay()
 	ServerSetupWeapons();
 }
 
+void AValoraintCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if(bIsShooting) Shoot();
+}
+
 
 void AValoraintCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -102,6 +113,8 @@ void AValoraintCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	// Returning replicated individual bools back to individual AValoraintCharacter
 	DOREPLIFETIME_CONDITION(AValoraintCharacter, bCanFirstAbility, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(AValoraintCharacter, bCanSecondAbility, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(AValoraintCharacter, PrimaryMagazineUse, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(AValoraintCharacter, SecondaryMagazineUse, COND_OwnerOnly);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -117,7 +130,8 @@ void AValoraintCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
 	// Bind fire event
-	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AValoraintCharacter::Shoot);
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AValoraintCharacter::StartShooting);
+	PlayerInputComponent->BindAction("Fire", IE_Released, this, &AValoraintCharacter::StopShooting);
 
 	// Bind movement events
 	PlayerInputComponent->BindAxis("MoveForward", this, &AValoraintCharacter::MoveForward);
@@ -135,27 +149,42 @@ void AValoraintCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	
 	// Swap Weapons
 	PlayerInputComponent->BindAction("SwapWeapon", IE_Pressed, this, &AValoraintCharacter::ServerSwapWeapons);
+	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &AValoraintCharacter::Reload);
 }
 
 void AValoraintCharacter::Shoot_Implementation()
 {
+	const UWeaponData* Equipped = bIsPrimaryEquipped ? PrimaryWeapon : SecondaryWeapon;
+	int32 magUse = bIsPrimaryEquipped ? PrimaryMagazineUse : SecondaryMagazineUse;
 	// try and fire a projectile
 	if (ProjectileClass != nullptr)
 	{
 		UWorld* const World = GetWorld();
+		
+		if(!isnan(LastFireTime) && UKismetSystemLibrary::GetGameTimeInSeconds(World) - LastFireTime < Equipped->FireRate) return;
+		if(magUse >= Equipped->MagazineSize)
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.0f, FColor::Purple, TEXT("Out of Ammo, 'R' to reload"));
+			return;
+		}
+		
 		if (World != nullptr)
 		{
 			const FRotator SpawnRotation = GetControlRotation();
-			const USceneComponent* Muzzle = (bIsPrimaryEquipped ? FP_MuzzleLocation : SecondaryMuzzle);
+			const USceneComponent* Muzzle = bIsPrimaryEquipped ? FP_MuzzleLocation : SecondaryMuzzle;
 			// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-			const FVector SpawnLocation = ((Muzzle != nullptr) ? Muzzle->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
+			const FVector SpawnLocation = (Muzzle != nullptr ? Muzzle->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
 
 			//Set Spawn Collision Handling Override
 			FActorSpawnParameters ActorSpawnParams;
 			ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 
 			// spawn the projectile at the muzzle
-			World->SpawnActor<AValoraintProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+			AValoraintProjectile* Projectile = World->SpawnActor<AValoraintProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+			Projectile->Initialize(Equipped->DamageAmount, this);
+			LastFireTime = UKismetSystemLibrary::GetGameTimeInSeconds(World);
+			if(bIsPrimaryEquipped) ++PrimaryMagazineUse;
+			else ++SecondaryMagazineUse;
 		}
 	}
 
@@ -350,7 +379,7 @@ void AValoraintCharacter::MulticastSwapWeapons_Implementation()
 	{
 		SwapWeaponsInternal(SecondaryGun, FP_Gun);
 	}
-	
+	LastFireTime = NAN;
 	bIsPrimaryEquipped = !bIsPrimaryEquipped;
 }
 
@@ -362,6 +391,18 @@ void AValoraintCharacter::SwapWeaponsInternal(USkeletalMeshComponent* Primary, U
 	Primary->DetachFromComponent({EDetachmentRule::KeepRelative, false});
 	Primary->SetOwnerNoSee(true);
 	Primary->AttachToComponent(NetworkedCharacterMesh, FAttachmentTransformRules(EAttachmentRule::KeepRelative,true), TEXT("HolsterPoint"));
+}
+
+// Resets magazine use for active weapon
+void AValoraintCharacter::Reload_Implementation()
+{
+	if(bIsPrimaryEquipped)
+	{
+		PrimaryMagazineUse = 0;
+		return;
+	}
+
+	SecondaryMagazineUse = 0;
 }
 
 void AValoraintCharacter::MoveForward(float Value)
@@ -382,13 +423,24 @@ void AValoraintCharacter::MoveRight(float Value)
 	}
 }
 
-void AValoraintCharacter::Hit_Implementation()
+void AValoraintCharacter::StartShooting()
 {
-	Health -= 10;
+	bIsShooting = true;
+}
+
+void AValoraintCharacter::StopShooting()
+{
+	bIsShooting = false;
+}
+
+void AValoraintCharacter::Hit_Implementation(AValoraintProjectile* Projectile)
+{
+	Health -= Projectile->Damage;
 	if(Health <= 0)
 	{
 		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, "DIED" );
-		GetInstigator();
+		AValoraintPlayerState* InstigatorState = Cast<AValoraintPlayerState>(Projectile->Instigator->GetPlayerState());
+		if(InstigatorState) InstigatorState->PlayerWallet = InstigatorState->PlayerWallet + Bounty;
 		Health = 100;
 	}
 	FString TheFloatStr = FString::SanitizeFloat(Health);
