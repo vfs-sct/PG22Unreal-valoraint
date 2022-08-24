@@ -411,7 +411,16 @@ void AValoraintCharacter::MulticastSetupWeapons_Implementation() const
 	SecondaryGun->SetSkeletalMesh(SecondaryWeapon->GunMesh);
 }
 
-void AValoraintCharacter::Destroyed()
+void AValoraintCharacter::ServerAddPurchasedWeapons_Implementation(UWeaponData* Primary, UWeaponData* Secondary)
 {
-	//GetWorld()->GetAuthGameMode<AValoraintGameMode>()->RestartPlayer(GetWorld()->GetFirstPlayerController());
+	MulticastAddPurchasedWeapons(Primary, Secondary);
+}
+
+void AValoraintCharacter::MulticastAddPurchasedWeapons_Implementation(UWeaponData* Primary,
+	UWeaponData* Secondary)
+{
+	if(Primary) PrimaryWeapon = Primary;
+	if(Secondary) SecondaryWeapon = Secondary;
+
+	ServerSetupWeapons();
 }

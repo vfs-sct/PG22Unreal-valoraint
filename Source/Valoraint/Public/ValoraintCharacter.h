@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "AbilityInterface.h"
 #include "EmittSpawnerProjectile.h"
+#include "Data/WeaponData.h"
 #include "GameFramework/Character.h"
 #include "ValoraintCharacter.generated.h"
 
@@ -102,9 +103,6 @@ public:
 	// Proxy for multicast swap, to ensure replication to all clients
 	UFUNCTION(Server, Reliable)
 	void ServerSwapWeapons();
-
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastSwapWeapons();
 	
 	//////////////////////// First Ability /////////////////////////////////
 
@@ -157,10 +155,9 @@ public:
 	UFUNCTION(BlueprintCallable, Server, Reliable)
 	void ServerSetupWeapons() const;
 	
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastSetupWeapons() const;
-	
-	virtual void Destroyed() override;
+	// Proxy for multicast set up, so it replicates to clients
+	UFUNCTION(BlueprintCallable, Server, Reliable)
+	void ServerAddPurchasedWeapons(UWeaponData* Primary, UWeaponData* Secondary);
 
 protected:
 
@@ -168,10 +165,6 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void Shoot();
-	
-	/** Fires a projectile. */
-	void OnFire();
-
 	
 	/** Handles moving forward/backward */
 	void MoveForward(float Val);
@@ -206,8 +199,16 @@ protected:
 
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = SecondAbility)
 	bool bCanSecondAbility = true;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSwapWeapons();
 	
-protected:
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastAddPurchasedWeapons(UWeaponData* Primary, UWeaponData* Secondary);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSetupWeapons() const;
+	
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	// End of APawn interface
