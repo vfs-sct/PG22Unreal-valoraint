@@ -81,6 +81,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseLookUpRate;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
+	float Health;
+
+	
+
 	/** Gun muzzle's offset from the characters location */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	FVector GunOffset;
@@ -152,6 +157,12 @@ public:
 	UFUNCTION(NetMulticast, Unreliable)
 	void SecondAbilityNetMulticast();
 
+	UFUNCTION(Server, Reliable)
+	void Hit();
+
+	
+	virtual void Destroyed() override;
+
 protected:
 
 	void SetupWeapons() const;
@@ -160,6 +171,8 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void Shoot();
+
+	
 	
 	/** Fires a projectile. */
 	void OnFire();
@@ -209,6 +222,8 @@ public:
 	USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
 	/** Returns FirstPersonCameraComponent subobject **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
+
+	
 
 };
 

@@ -23,6 +23,8 @@ AValoraintProjectile::AValoraintProjectile()
 
 	ProjMoveComp->SetUpdatedComponent(Collider);
 	bReplicates = true;
+
+	hasHit = false;
 }
 
 
@@ -40,17 +42,23 @@ void AValoraintProjectile::Tick(float DeltaTime)
 
 }
 
-
-
-void AValoraintProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
+void AValoraintProjectile::OnHit_Implementation(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
 	AValoraintCharacter* Player = Cast<AValoraintCharacter>(OtherActor);
-	if(OtherActor == Player)
+	if(Player && hasHit == false)
 	{
+		SetInstigator(Player);
 		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, "Hit");
+		Player->Hit();
+		hasHit = true;
+		Destroy();
 		
 	}
-
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, "Not Hit");
-	Destroy();
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, "Not Hit");
+		Destroy();
+	}
+	
+	
 }

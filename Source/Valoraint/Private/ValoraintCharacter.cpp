@@ -12,6 +12,7 @@
 #include "GameFramework/InputSettings.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
+#include "MotionControllerComponent.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -26,6 +27,7 @@ AValoraintCharacter::AValoraintCharacter()
 	// set our turn rates for input
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
+	Health = 100.0f;
 
 	NetworkedCharacterMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Networked Mesh"));
 	NetworkedCharacterMesh->SetOwnerNoSee(true);
@@ -382,4 +384,23 @@ void AValoraintCharacter::MoveRight(float Value)
 		// add movement in that direction
 		AddMovementInput(GetActorRightVector(), Value);
 	}
+}
+
+void AValoraintCharacter::Hit_Implementation()
+{
+	Health -= 10;
+	if(Health <= 0)
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, "DIED" );
+		GetInstigator();
+		Health = 100;
+	}
+	FString TheFloatStr = FString::SanitizeFloat(Health);
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2, FColor::Green, *TheFloatStr );
+	
+}
+
+void AValoraintCharacter::Destroyed()
+{
+	//GetWorld()->GetAuthGameMode<AValoraintGameMode>()->RestartPlayer(GetWorld()->GetFirstPlayerController());
 }
